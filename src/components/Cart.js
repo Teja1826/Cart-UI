@@ -1,54 +1,53 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import axios from "axios";
 import Brand from "./Brand";
 import Products from "./Products";
 import CartItems from "./CartItems";
 import Checkout from "./Checkout";
+import fetchReducer, { initialState } from "./reducers/fetchReducer";
+import { FETCH_SUCCESS, FETCH_ERROR } from "./actionTypes";
+
+const getUniqueBrands = (products) => {
+  let uniqueBrands = [];
+  products.forEach((product) => {
+    if (!uniqueBrands.includes(product.brand)) {
+      uniqueBrands.push(product.brand);
+    }
+  });
+  return uniqueBrands;
+};
+
+const getBrandsCount = (products) => {
+  let brandCount = {};
+  products.forEach((product) => {
+    brandCount[product.brand] = brandCount[product.brand] + 1 || 1;
+  });
+  return brandCount;
+};
 
 function Cart() {
-  const [products, setProducts] = useState([]);
+  const [data, dispatch] = useReducer(fetchReducer, initialState);
+  const products = data.products;
+  const brands = getUniqueBrands(products);
+  const brandsCount = getBrandsCount(products);
+  console.log(products);
+  console.log(brands);
+  console.log(brandsCount);
   const [productsInBrand, setProductsInBrand] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [brandsCount, setBrandsCount] = useState({});
   const [brandName, setBrandName] = useState("");
 
   useEffect(() => {
     axios
       .get(
-        `https://gist.githubusercontent.com/sandeepdillerao/edb372a95d6cf1a2a49b79577d023281/raw/75bf5e59e47748fad0d01ca63c81dd3791c2615c/product.json`
+        "https://gist.githubusercontent.com/sandeepdillerao/edb372a95d6cf1a2a49b79577d023281/raw/75bf5e59e47748fad0d01ca63c81dd3791c2615c/product.json"
       )
       .then((response) => {
-        setProducts(response.data);
-        getUniqueBrands();
-      })
-      .then(() => {
-        getBrandsCount();
-      })
-      .then(() => {
-        brandHandler(brands[0]);
+        dispatch({ type: FETCH_SUCCESS, payload: response.data });
       })
       .catch((error) => {
-        console.log(error);
+        dispatch({ type: FETCH_ERROR, payload: error });
       });
   }, []);
-
-  const getUniqueBrands = () => {
-    let uniqueBrands = [];
-    products.forEach((product) => {
-      if (!uniqueBrands.includes(product.brand)) {
-        uniqueBrands.push(product.brand);
-      }
-    });
-    setBrands(uniqueBrands);
-  };
-
-  const getBrandsCount = () => {
-    let brandCount = {};
-    products.forEach((product) => {
-      brandCount[product.brand] = brandCount[product.brand] + 1 || 1;
-    });
-    setBrandsCount(brandCount);
-  };
 
   const brandHandler = (brandName) => {
     let items = products.filter((product) => product.brand === brandName);
